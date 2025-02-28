@@ -1,0 +1,43 @@
+.main-title {
+    font-size: 2.5em;
+    color: #4A90E2;
+    text-align: center;
+    font-weight: bold;
+}
+
+.subheader {
+    font-size: 1.2em;
+    color: #666;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.upload-box {
+    border: 2px dashed #4A90E2;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #F9FAFB;
+}
+
+.emotion-text {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #2ECC71;
+}
+
+.stButton>button {
+    background-color: #4A90E2;
+    color: white;
+    border-radius: 8px;
+    padding: 10px 20px;
+}
+
+.stButton>button:hover {
+    background-color: #357ABD;
+}
+
+/* Footer styling */
+.footer {
+    text-align: center;
+    color: #888;
+}
