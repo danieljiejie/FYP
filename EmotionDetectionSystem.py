@@ -88,7 +88,7 @@ class EmotionDetectionSystem:
         
         # Recreate and load facial model
         # self.facial_model = tf.keras.models.load_model('Model/FacialEmotionModel.h5')
-        self.facial_model = self.create_emotion_model(num_classes=4, dropout_rate=0.2)  # Match your training setup
+        self.facial_model = self.create_emotion_model()  # Match your training setup
         self.facial_model.set_weights(system_state['facial_model_weights'])
         
         # Recreate and load general model
