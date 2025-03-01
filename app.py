@@ -15,7 +15,7 @@ import MusicPostProcess
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 MUSIC_FOLDER = os.path.join(BASE_PATH, "static", "music")
 MODEL_FOLDER = os.path.join(BASE_PATH, "Model")
-MODEL_PATH = os.path.join(MODEL_FOLDER, "Emotion_Detection_System.joblib")
+MODEL_PATH = os.path.join(MODEL_FOLDER, "Emotion_Detection_System_cpu.joblib")
 os.makedirs(MUSIC_FOLDER, exist_ok=True)
 os.makedirs(MODEL_FOLDER, exist_ok=True)
 
@@ -130,7 +130,7 @@ def download_models():
     model_files = {
         "FacialEmotionModel.h5": FACIAL_MODEL_URL,
         "NonFacialEmotionModelV2.pth": GENERAL_MODEL_URL,
-        "Emotion_Detection_System.joblib": JOBLIB_MODEL_URL
+        "Emotion_Detection_System_cpu.joblib": JOBLIB_MODEL_URL
     }
     for filename, url in model_files.items():
         local_path = os.path.join(MODEL_FOLDER, filename)
