@@ -61,7 +61,7 @@ class EmotionDetectionSystem:
         joblib.dump(system_state, save_path)
         print(f"System saved to {save_path}")
 
-    def create_emotion_model(num_classes=4, dropout_rate=0.2):
+    def create_emotion_model():
         """Recreate the facial emotion model architecture"""
         base_model = Facenet.load_facenet512d_model()  # Assuming Facenet is available
         
@@ -72,7 +72,7 @@ class EmotionDetectionSystem:
         # x = layers.Dense(256, activation='relu')(x)
         # x = layers.BatchNormalization()(x)
         # x = layers.Dropout(dropout_rate)(x)
-        x = layers.Dense(num_classes, activation='softmax')(x)
+        x = layers.Dense(4, activation='softmax')(x)
         
         model = models.Model(inputs=base_model.input, outputs=x)
     
