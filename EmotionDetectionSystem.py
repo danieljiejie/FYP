@@ -42,7 +42,7 @@ class EmotionDetectionSystem:
         self.general_model.load_state_dict(checkpoint['model_state_dict'])
         self.general_model.eval()
         
-   def save_system(self, save_path='Model/Emotion_Detection_System.joblib'):
+    def save_system(self, save_path='Model/Emotion_Detection_System.joblib'):
         """Save the entire system using joblib"""
         # Move general model to CPU before saving
         self.general_model.to('cpu')
