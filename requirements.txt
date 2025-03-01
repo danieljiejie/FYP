@@ -2,7 +2,7 @@ torch==2.4.1
 torchaudio==2.4.1
 torchmetrics==1.5.1
 torchvision==0.19.1
-tensorflow==2.15.0
+tensorflow==2.17.0
 numpy==1.26.0
 pillow==10.2.0
 deepface==0.0.93
