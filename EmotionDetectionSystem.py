@@ -37,7 +37,7 @@ class EmotionDetectionSystem:
                     general_model_path='Model/NonFacialEmotionModelV2.pth'):
         """Load both facial and general emotion models"""
         # Load facial emotion model (TensorFlow/Keras)
-        self.facial_model = tf.keras.models.load_model(facial_model_path)
+        #self.facial_model = tf.keras.models.load_model(facial_model_path)
         
         # Load general emotion model (PyTorch)
         self.general_model = EmotionClassifier(num_classes=5)
