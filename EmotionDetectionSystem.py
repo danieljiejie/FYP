@@ -12,6 +12,10 @@ import joblib
 import os
 from mtcnn import MTCNN
 from EmotionClassifier import EmotionClassifier
+
+from deepface.models.facial_recognition import Facenet
+from tensorflow.keras import layers, models
+
 class EmotionDetectionSystem:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -62,7 +66,8 @@ class EmotionDetectionSystem:
         system_state = joblib.load(load_path)
         
         # Recreate and load facial model
-        self.facial_model = tf.keras.models.load_model('Model/FacialEmotionModel.h5')
+        # self.facial_model = tf.keras.models.load_model('Model/FacialEmotionModel.h5')
+        self.facial_model = create_emotion_model(num_classes=4, dropout_rate=0.2)  # Match your training setup
         self.facial_model.set_weights(system_state['facial_model_weights'])
         
         # Recreate and load general model
@@ -81,6 +86,27 @@ class EmotionDetectionSystem:
         self.emotion_class_general = system_state['emotion_class_general']
         
         print("System loaded successfully")
+
+    def create_emotion_model(num_classes=4, dropout_rate=0.2):
+        """Recreate the facial emotion model architecture"""
+        base_model = Facenet.load_facenet512d_model()  # Assuming Facenet is available
+        
+        # Add more sophisticated top layers
+        x = base_model.layers[-2].output
+        x = layers.BatchNormalization()(x)
+        # x = layers.Dropout(dropout_rate)(x)
+        # x = layers.Dense(256, activation='relu')(x)
+        # x = layers.BatchNormalization()(x)
+        # x = layers.Dropout(dropout_rate)(x)
+        x = layers.Dense(num_classes, activation='softmax')(x)
+        
+        model = models.Model(inputs=base_model.input, outputs=x)
+    
+        # Progressive unfreezing strategy (match training setup)
+        for layer in model.layers[:-6]:  # Keep more layers frozen initially
+            layer.trainable = False
+            
+        return model
 
     def detect_face_emotion(self, image_path):
         img = cv2.imread(image_path)
