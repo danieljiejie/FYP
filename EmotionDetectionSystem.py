@@ -44,11 +44,12 @@ class EmotionDetectionSystem:
         
     def save_system(self, save_path='Model/Emotion_Detection_System.joblib'):
         """Save the entire system using joblib"""
-        # Move general model to CPU before saving
-        self.general_model.to('cpu')
+        # Ensure general_model state_dict is on CPU
+        state_dict = self.general_model.state_dict()
+        state_dict = {k: v.to('cpu') for k, v in state_dict.items()}
         system_state = {
             'facial_model_weights': self.facial_model.get_weights(),
-            'general_model_state': self.general_model.state_dict(),
+            'general_model_state': state_dict,
             'emotion_class_facial': self.emotion_class_facial,
             'emotion_class_general': self.emotion_class_general,
             'transform_state': self.val_transform.state_dict() if hasattr(self.val_transform, 'state_dict') else None
