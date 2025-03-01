@@ -61,7 +61,7 @@ class EmotionDetectionSystem:
         joblib.dump(system_state, save_path)
         print(f"System saved to {save_path}")
 
-    def create_emotion_model():
+    def create_emotion_model(self):
         """Recreate the facial emotion model architecture"""
         base_model = Facenet.load_facenet512d_model()  # Assuming Facenet is available
         
