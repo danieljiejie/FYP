@@ -42,8 +42,10 @@ class EmotionDetectionSystem:
         self.general_model.load_state_dict(checkpoint['model_state_dict'])
         self.general_model.eval()
         
-    def save_system(self, save_path='Model/Emotion_Detection_System.joblib'):
+   def save_system(self, save_path='Model/Emotion_Detection_System.joblib'):
         """Save the entire system using joblib"""
+        # Move general model to CPU before saving
+        self.general_model.to('cpu')
         system_state = {
             'facial_model_weights': self.facial_model.get_weights(),
             'general_model_state': self.general_model.state_dict(),
@@ -64,8 +66,13 @@ class EmotionDetectionSystem:
         
         # Recreate and load general model
         self.general_model = EmotionClassifier(num_classes=5)
-        self.general_model.to(self.device)
-        self.general_model.load_state_dict(system_state['general_model_state'])
+        self.general_model.to(self.device)  # Device is set to 'cpu' in __init__
+        
+        # Load the state dictionary, mapping to CPU explicitly
+        state_dict = system_state['general_model_state']
+        # Ensure all tensors are moved to CPU
+        state_dict = {k: v.to('cpu') for k, v in state_dict.items()}
+        self.general_model.load_state_dict(state_dict)
         self.general_model.eval()
         
         # Load other attributes
