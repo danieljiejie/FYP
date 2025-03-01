@@ -15,5 +15,4 @@ streamlit==1.40.1
 werkzeug
 pretty_midi==0.2.9
 requests
-math
 random
