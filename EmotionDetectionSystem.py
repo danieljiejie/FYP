@@ -60,6 +60,27 @@ class EmotionDetectionSystem:
         }
         joblib.dump(system_state, save_path)
         print(f"System saved to {save_path}")
+
+    def create_emotion_model(num_classes=4, dropout_rate=0.2):
+        """Recreate the facial emotion model architecture"""
+        base_model = Facenet.load_facenet512d_model()  # Assuming Facenet is available
+        
+        # Add more sophisticated top layers
+        x = base_model.layers[-2].output
+        x = layers.BatchNormalization()(x)
+        # x = layers.Dropout(dropout_rate)(x)
+        # x = layers.Dense(256, activation='relu')(x)
+        # x = layers.BatchNormalization()(x)
+        # x = layers.Dropout(dropout_rate)(x)
+        x = layers.Dense(num_classes, activation='softmax')(x)
+        
+        model = models.Model(inputs=base_model.input, outputs=x)
+    
+        # Progressive unfreezing strategy (match training setup)
+        for layer in model.layers[:-6]:  # Keep more layers frozen initially
+            layer.trainable = False
+            
+        return model
         
     def load_system(self, load_path='Model/Emotion_Detection_System_cpu.joblib'):
         """Load the entire system from joblib"""
@@ -87,26 +108,6 @@ class EmotionDetectionSystem:
         
         print("System loaded successfully")
 
-    def create_emotion_model(num_classes=4, dropout_rate=0.2):
-        """Recreate the facial emotion model architecture"""
-        base_model = Facenet.load_facenet512d_model()  # Assuming Facenet is available
-        
-        # Add more sophisticated top layers
-        x = base_model.layers[-2].output
-        x = layers.BatchNormalization()(x)
-        # x = layers.Dropout(dropout_rate)(x)
-        # x = layers.Dense(256, activation='relu')(x)
-        # x = layers.BatchNormalization()(x)
-        # x = layers.Dropout(dropout_rate)(x)
-        x = layers.Dense(num_classes, activation='softmax')(x)
-        
-        model = models.Model(inputs=base_model.input, outputs=x)
-    
-        # Progressive unfreezing strategy (match training setup)
-        for layer in model.layers[:-6]:  # Keep more layers frozen initially
-            layer.trainable = False
-            
-        return model
 
     def detect_face_emotion(self, image_path):
         img = cv2.imread(image_path)
