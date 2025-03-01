@@ -1,8 +1,6 @@
 import random
 import pretty_midi
 import math
-import soundfile as sf
-import sounddevice as sd
 import numpy as np
 
 def generate_rhythm(total_duration,emotion,tempo):
