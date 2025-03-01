@@ -126,7 +126,7 @@ def load_css(file_path):
 
 # Download model files from GitHub if not present
 @st.cache_resource
-def download_models():
+def download_models(force_download=False):
     model_files = {
         "FacialEmotionModel.h5": FACIAL_MODEL_URL,
         "NonFacialEmotionModelV2.pth": GENERAL_MODEL_URL,
@@ -134,7 +134,7 @@ def download_models():
     }
     for filename, url in model_files.items():
         local_path = os.path.join(MODEL_FOLDER, filename)
-        if not os.path.exists(local_path):
+        if not os.path.exists(local_path) or force_download:
             with st.spinner(f"Downloading {filename} from GitHub..."):
                 response = requests.get(url, stream=True)
                 if response.status_code == 200:
