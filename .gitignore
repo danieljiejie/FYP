@@ -1,0 +1,4 @@
+uploads/
+static/music/
+*.pyc
+__pycache__/
