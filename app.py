@@ -162,7 +162,7 @@ def init_emotion_system():
 
 # Keep the generate_midi function unchanged
 @st.cache_data
-def generate_midi(emotion,melody_instrument_program,chord_instrument_program,total_duration,tempo,_timestamp):
+def generate_midi(emotion,melody_instrument_program,chord_instrument_program,total_duration,tempo,_timestamp,include_drums = True):
     importlib.reload(MusicAlgorithmFunciton)
     importlib.reload(MusicPostProcess)
     
@@ -190,7 +190,8 @@ def generate_midi(emotion,melody_instrument_program,chord_instrument_program,tot
 
     midi_data.instruments.append(melody_track)
     midi_data.instruments.append(chord_track)
-    midi_data.instruments.append(drum_track)
+    if include_drums:
+        midi_data.instruments.append(drum_track)
     midi_data.write(output_path)
 
     return output_path
@@ -305,12 +306,22 @@ def main():
         )
         st.session_state.tempo = tempo
 
+         # Add a drum parameter
+        if 'include_drums' not in st.session_state:
+            st.session_state.include_drums = True  # Default to including drums
+        include_drums = st.checkbox(
+            "Include drums?",
+            value=st.session_state.include_drums,
+            key="drum_checkbox"
+        )
+        st.session_state.include_drums = include_drums
+
         # Generate music only on button click and if parameters changed
         generate_key = f"{emotion}_{melody_program}_{chord_program}_{total_duration}_{tempo}"
         if st.button("Generate Music") or ('generate_key' in st.session_state and st.session_state.generate_key != generate_key):
             with st.spinner("Generating music..."):
                 timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                midi_path = generate_midi(emotion, melody_program, chord_program, total_duration, tempo, timestamp)
+                midi_path = generate_midi(emotion, melody_program, chord_program, total_duration, tempo, timestamp,include_drums)
                 st.session_state.midi_path = midi_path
                 st.session_state.generate_key = generate_key
                 st.success("Music generated successfully! 🎵")
