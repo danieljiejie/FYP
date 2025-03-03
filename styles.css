@@ -1,3 +1,67 @@
+/* Sidebar Container */
+.stSidebar {
+    background-color: #2c3e50; /* Dark blue background for sidebar */
+    color: #ffffff; /* White text for contrast */
+    padding: 20px;
+    border-right: 2px solid #34495e; /* Light border for separation */
+}
+
+/* Sidebar Title */
+.stSidebar > h1 {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #ecf0f1; /* Slightly lighter white for title */
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Radio Button Label */
+.stRadio label {
+    font-size: 1.1em;
+    color: #ecf0f1; /* White text for labels */
+    margin: 10px 0;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+/* Selected Radio Button (Active State) */
+.stRadio [data-baseweb="radio"] input:checked + div + label {
+    background-color: #3498db; /* Blue for selected option */
+    color: #ffffff;
+}
+
+/* Hover Effect for Radio Button Labels */
+.stRadio label:hover {
+    background-color: #34495e; /* Darker blue on hover */
+    cursor: pointer;
+}
+
+/* General Text in Sidebar */
+.stSidebar p, .stSidebar div {
+    color: #ecf0f1;
+}
+
+/* Ensure radio buttons are visible and clickable */
+.stRadio {
+    margin-bottom: 15px;
+}
+
+/* Remove default Streamlit margins or padding if needed */
+.stSidebar > div {
+    margin: 0;
+    padding: 0;
+}
+
+/* Footer (if you have one in the sidebar) */
+.stSidebar .footer {
+    position: absolute;
+    bottom: 10px;
+    width: 90%;
+    text-align: center;
+    color: #a9b7c3; /* Light gray for footer text */
+}
+
 .main-title {
     font-size: 2.5em;
     color: #4A90E2;
@@ -9,6 +73,14 @@
     font-size: 1.2em;
     color: #666;
     text-align: center;
+    margin-bottom: 20px;
+}
+
+.publish {
+    font-size: 1.1em;
+    color: #880404;
+    text-align: center;
+    margin-top: 10px;
     margin-bottom: 20px;
 }
 
