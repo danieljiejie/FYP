@@ -220,13 +220,19 @@ def add_feedback(emotion, timestamp, user_feedback, midi_path=None, image_path=N
         relative_midi_path = os.path.relpath(feedback_midi_path, BASE_PATH)
         feedback_entry["music_file"] = relative_midi_path
     
-    # Handle image file if provided
+   # Handle image file if provided
     if image_path:
         feedback_images_folder = os.path.join(BASE_PATH, "static", "feedback_images")
         os.makedirs(feedback_images_folder, exist_ok=True)
         image_ext = os.path.splitext(image_path)[1]
         feedback_image_path = os.path.join(feedback_images_folder, f"{emotion}_{timestamp}{image_ext}")
-        shutil.copy(image_path, feedback_image_path)
+        
+        # Check if source and destination are the same file
+        if os.path.abspath(image_path) != os.path.abspath(feedback_image_path):
+            shutil.copy(image_path, feedback_image_path)
+        else:
+            st.warning("Image already exists at destination; skipping copy.")
+        
         relative_image_path = os.path.relpath(feedback_image_path, BASE_PATH)
         feedback_entry["image_file"] = relative_image_path
     
