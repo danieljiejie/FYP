@@ -199,31 +199,40 @@ def generate_midi(emotion,melody_instrument_program,chord_instrument_program,tot
 
     return output_path
 
-def add_feedback(emotion, timestamp, user_feedback, midi_path, image_path):
-    """Add new feedback entry with music and image files"""
-    feedback_list = load_feedback()  # Assuming this loads existing feedback from JSON
+def add_feedback(emotion, timestamp, user_feedback, midi_path=None, image_path=None):
+    """Add new feedback entry with optional music and image files"""
+    feedback_list = load_feedback()  # Load existing feedback from JSON
     
-    # Save music permanently
-    feedback_music_folder = os.path.join(BASE_PATH, "static", "feedback_music")
-    os.makedirs(feedback_music_folder, exist_ok=True)
-    feedback_midi_path = os.path.join(feedback_music_folder, f"{emotion}_{timestamp}.mid")
-    shutil.copy(midi_path, feedback_midi_path)
-    
-    # Store relative paths
-    relative_image_path = os.path.relpath(image_path, BASE_PATH)
-    relative_midi_path = os.path.relpath(feedback_midi_path, BASE_PATH)
-    
-    # Create feedback entry
+    # Base feedback entry without optional fields
     feedback_entry = {
         "emotion": emotion,
         "timestamp": timestamp,
         "feedback": user_feedback,
-        "music_file": relative_midi_path,
-        "image_file": relative_image_path,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
+    
+    # Handle music file if provided
+    if midi_path:
+        feedback_music_folder = os.path.join(BASE_PATH, "static", "feedback_music")
+        os.makedirs(feedback_music_folder, exist_ok=True)
+        feedback_midi_path = os.path.join(feedback_music_folder, f"{emotion}_{timestamp}.mid")
+        shutil.copy(midi_path, feedback_midi_path)
+        relative_midi_path = os.path.relpath(feedback_midi_path, BASE_PATH)
+        feedback_entry["music_file"] = relative_midi_path
+    
+    # Handle image file if provided
+    if image_path:
+        feedback_images_folder = os.path.join(BASE_PATH, "static", "feedback_images")
+        os.makedirs(feedback_images_folder, exist_ok=True)
+        image_ext = os.path.splitext(image_path)[1]
+        feedback_image_path = os.path.join(feedback_images_folder, f"{emotion}_{timestamp}{image_ext}")
+        shutil.copy(image_path, feedback_image_path)
+        relative_image_path = os.path.relpath(feedback_image_path, BASE_PATH)
+        feedback_entry["image_file"] = relative_image_path
+    
+    # Add the feedback entry to the list and save
     feedback_list.append(feedback_entry)
-    save_feedback(feedback_list)  # Assuming this saves feedback to JSON
+    save_feedback(feedback_list)
 
 def load_feedback():
     """Load feedback from JSON file"""
@@ -278,6 +287,130 @@ def display_feedback():
     else:
         st.write("No feedback yet.")
 
+def generate_music_options(emotion, tab_key_prefix):
+    """Display music generation options and return selected parameters with tab-specific keys."""
+    options = emotion_options.get(emotion, emotion_options['happy'])  # Fallback to 'happy'
+
+    # Melody instrument
+    if 'melody_name' not in st.session_state or st.session_state.melody_name not in [name for name, _ in options['melody_instruments']]:
+        st.session_state.melody_name = options['melody_instruments'][0][0]  # Default to first option
+    melody_names = [name for name, _ in options['melody_instruments']]
+    melody_name = st.selectbox(
+        "Choose a melody instrument:",
+        options=melody_names,
+        index=melody_names.index(st.session_state.melody_name),
+        key=f"{tab_key_prefix}_melody_select_{emotion}"
+    )
+    st.session_state.melody_name = melody_name
+    melody_program = next(prog for name, prog in options['melody_instruments'] if name == melody_name)
+
+    # Chord instrument
+    if 'chord_name' not in st.session_state or st.session_state.chord_name not in [name for name, _ in options['chord_instruments']]:
+        st.session_state.chord_name = options['chord_instruments'][0][0]  # Default to first option
+    chord_names = [name for name, _ in options['chord_instruments']]
+    chord_name = st.selectbox(
+        "Choose a chord instrument:",
+        options=chord_names,
+        index=chord_names.index(st.session_state.chord_name),
+        key=f"{tab_key_prefix}_chord_select_{emotion}"
+    )
+    st.session_state.chord_name = chord_name
+    chord_program = next(prog for name, prog in options['chord_instruments'] if name == chord_name)
+
+    # Duration
+    if 'total_duration' not in st.session_state or st.session_state.total_duration not in duration_options:
+        st.session_state.total_duration = duration_options[1]  # Default to 30
+    total_duration = st.selectbox(
+        "Choose the duration (seconds):",
+        options=duration_options,
+        index=duration_options.index(st.session_state.total_duration),
+        key=f"{tab_key_prefix}_duration_select_{emotion}"
+    )
+    st.session_state.total_duration = total_duration
+
+    # Tempo
+    if 'tempo' not in st.session_state or st.session_state.tempo not in options['tempos']:
+        st.session_state.tempo = options['tempos'][len(options['tempos']) // 2]  # Middle tempo
+    tempo = st.selectbox(
+        "Choose the tempo (BPM):",
+        options=options['tempos'],
+        index=options['tempos'].index(st.session_state.tempo),
+        key=f"{tab_key_prefix}_tempo_select_{emotion}"
+    )
+    st.session_state.tempo = tempo
+
+    # Drums
+    if 'include_drums' not in st.session_state:
+        st.session_state.include_drums = True
+    include_drums = st.checkbox(
+        "Include drums?",
+        value=st.session_state.include_drums,
+        key=f"{tab_key_prefix}_drum_checkbox_{emotion}"
+    )
+    st.session_state.include_drums = include_drums
+
+    return melody_program, chord_program, total_duration, tempo, include_drums
+
+def handle_music_generation(emotion, melody_program, chord_program, total_duration, tempo, include_drums, tab_key_prefix):
+    """Generate music and store it in session state with tab-specific key."""
+    generate_key = f"{emotion}_{melody_program}_{chord_program}_{total_duration}_{tempo}"
+    if st.button("Generate Music", key=f"{tab_key_prefix}_generate_button"):
+       
+        with st.spinner("Generating music..."):
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            midi_path = generate_midi(emotion, melody_program, chord_program, total_duration, tempo, timestamp, include_drums)
+            st.session_state[f'{tab_key_prefix}_midi_path'] = midi_path
+            st.session_state[f'{tab_key_prefix}_timestamp'] = timestamp
+            st.session_state[f'{tab_key_prefix}_generate_key'] = generate_key
+            st.success("Music generated successfully! 🎵")
+
+def display_music_result(tab_key_prefix):
+    """Display generated music if available for the specific tab."""
+    midi_key = f'{tab_key_prefix}_midi_path'
+    if midi_key in st.session_state:
+        midi_path = st.session_state[midi_key]
+        timestamp = st.session_state.get(f'{tab_key_prefix}_timestamp', os.path.basename(midi_path).split('_')[1].split('.')[0])
+        if tab_key_prefix == "image":
+            emotion_label = st.session_state.emotion.capitalize()
+        else:
+            emotion_label = st.session_state.selected_emotion.capitalize()
+
+        with open(midi_path, "rb") as file:
+            st.download_button(
+                label=f"Download {emotion_label} Music",
+                data=file,
+                file_name=os.path.basename(midi_path),
+                mime="audio/midi",
+                key=f"{tab_key_prefix}_download-midi"
+            )
+
+def handle_feedback_submission(emotion, tab_key_prefix, image_path=None):
+    """Handle feedback submission with optional image path for the specific tab."""
+    with st.form(key=f'{tab_key_prefix}_feedback_form'):
+        feedback_text = st.text_area("Share your thoughts about this music!", height=100)
+        submit_button = st.form_submit_button(label='Submit Feedback')
+        
+        if submit_button and feedback_text:
+            if image_path and not os.path.exists(image_path):
+                st.error("Image file is missing.")
+            else:
+                feedback_images_folder = os.path.join(BASE_PATH, "static", "feedback_images")
+                os.makedirs(feedback_images_folder, exist_ok=True)
+                timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+                if image_path:
+                    image_ext = os.path.splitext(image_path)[1]
+                    feedback_image_path = os.path.join(feedback_images_folder, f"{emotion}_{timestamp}{image_ext}")
+                    shutil.copy(image_path, feedback_image_path)
+                else:
+                    feedback_image_path = None
+                midi_key = f'{tab_key_prefix}_midi_path'
+                if midi_key in st.session_state:
+                    add_feedback(emotion, timestamp, feedback_text, st.session_state[midi_key], feedback_image_path)
+                    st.success("Thank you for your feedback! Check it out on the Feedback page.")
+                else:
+                    st.warning("No music generated yet. Feedback saved without music.")
+                    add_feedback(emotion, timestamp, feedback_text, None, feedback_image_path)
+
 def main():
     # Load external CSS
     load_css(os.path.join(BASE_PATH, "styles.css"))
@@ -288,7 +421,6 @@ def main():
 
     # Page logic
     if page == "Home":
-
         # Initialize emotion system only once
         if 'emotion_system' not in st.session_state:
             st.session_state.emotion_system = init_emotion_system()
@@ -298,188 +430,95 @@ def main():
         # Optional: Button to force model refresh
         if st.button("Refresh Models"):
             download_models(force_download=True)
-            st.cache_resource.clear()  # Clear the cached emotion system
+            st.cache_resource.clear()
             st.session_state.emotion_system = init_emotion_system()
             st.success("Models refreshed and system reloaded!")
 
         # Home page content
         st.markdown('<div class="main-title">Emotion-Based Music Generator</div>', unsafe_allow_html=True)
-        st.markdown('<div class="subheader">Upload an image and let us compose a music inspired by its emotion!</div>',
+        st.markdown('<div class="subheader">Generate music by uploading an image or selecting an emotion!</div>',
                     unsafe_allow_html=True)
 
-        # Check if an image is already uploaded and preserved in session state
-        if 'temp_path' in st.session_state and os.path.exists(st.session_state.temp_path):
-            # Display the existing uploaded image
-            st.image(st.session_state.temp_path, caption="Uploaded Image", use_container_width=True)
-            emotion = st.session_state.emotion
-            st.markdown(f'<p class="emotion-text">Detected Emotion: {emotion.capitalize()}</p>', unsafe_allow_html=True)
+        
+        # Tabs for two methods
+        tab1, tab2 = st.tabs(["Image Upload", "Emotion Selection"])
 
-            # Get emotion-specific options
-            options = emotion_options.get(emotion, emotion_options['happy'])  # Fallback to 'happy'
+        # Tab 1: Image Upload
+        with tab1:
+            if 'temp_path' in st.session_state and os.path.exists(st.session_state.temp_path):
+                st.image(st.session_state.temp_path, caption="Uploaded Image", use_container_width=True)
+                emotion = st.session_state.emotion
+                st.markdown(f'<p class="emotion-text">Detected Emotion: {emotion.capitalize()}</p>', unsafe_allow_html=True)
 
-            # Parameter selection with session state persistence
-            if 'melody_name' not in st.session_state:
-                st.session_state.melody_name = options['melody_instruments'][0][0]
-            melody_names = [name for name, _ in options['melody_instruments']]
-            melody_name = st.selectbox(
-                "Choose a melody instrument:",
-                options=melody_names,
-                index=melody_names.index(st.session_state.melody_name),
-                key="melody_select"
+                # Music generation options
+                melody_program, chord_program, total_duration, tempo, include_drums = generate_music_options(emotion, "image")
+                handle_music_generation(emotion, melody_program, chord_program, total_duration, tempo, include_drums, "image")
+                display_music_result("image")
+                st.markdown('<div class="publish"> Please leave your FEEDBACK to make Developer Improve the App Consistently!</div>',
+                    unsafe_allow_html=True)
+                handle_feedback_submission(emotion, "image", st.session_state.temp_path)
+
+                if st.button("Upload a new image"):
+                    if 'temp_path' in st.session_state and os.path.exists(st.session_state.temp_path):
+                        os.remove(st.session_state.temp_path)
+                        del st.session_state.temp_path
+                    if 'image_midi_path' in st.session_state:
+                        del st.session_state.image_midi_path
+                    st.rerun()
+            else:
+                uploaded_file = st.file_uploader("Upload an image to generate music based on its emotion!",
+                                                type=["jpg", "jpeg", "png"])
+                if uploaded_file is not None:
+                    if 'temp_path' in st.session_state and os.path.exists(st.session_state.temp_path):
+                        os.remove(st.session_state.temp_path)
+                    with st.spinner("Analyzing emotion..."):
+                        try:
+                            temp_path = os.path.join(MUSIC_FOLDER, secure_filename(uploaded_file.name))
+                            with open(temp_path, "wb") as f:
+                                f.write(uploaded_file.getbuffer())
+                            result = emotion_system.predict_emotion(temp_path)
+                            emotion = result['emotion']
+                            st.session_state.emotion = emotion
+                            st.session_state.last_file = uploaded_file.name
+                            st.session_state.temp_path = temp_path
+                            if 'image_midi_path' in st.session_state:
+                                del st.session_state.image_midi_path
+                        except Exception as e:
+                            st.error(f"Oops! Something went wrong: {str(e)}")
+                            st.write("Please try uploading a different image.")
+                            return
+                    st.rerun()
+
+        # Tab 2: Emotion Selection
+        with tab2:
+            available_emotions = list(emotion_options.keys())
+            if 'selected_emotion' not in st.session_state:
+                st.session_state.selected_emotion = available_emotions[0]
+            emotion = st.selectbox(
+                "Select an emotion:",
+                options=available_emotions,
+                index=available_emotions.index(st.session_state.selected_emotion),
+                key="emotion_select"
             )
-            st.session_state.melody_name = melody_name
-            melody_program = next(prog for name, prog in options['melody_instruments'] if name == melody_name)
+            st.session_state.selected_emotion = emotion
+            #st.session_state.emotion = emotion  # Store for consistency
 
-            if 'chord_name' not in st.session_state:
-                st.session_state.chord_name = options['chord_instruments'][0][0]
-            chord_names = [name for name, _ in options['chord_instruments']]
-            chord_name = st.selectbox(
-                "Choose a chord instrument:",
-                options=chord_names,
-                index=chord_names.index(st.session_state.chord_name),
-                key="chord_select"
-            )
-            st.session_state.chord_name = chord_name
-            chord_program = next(prog for name, prog in options['chord_instruments'] if name == chord_name)
+            # Music generation options
+            melody_program, chord_program, total_duration, tempo, include_drums = generate_music_options(emotion, "emotion")
+            handle_music_generation(emotion, melody_program, chord_program, total_duration, tempo, include_drums, "emotion")
+            display_music_result("emotion")
+            st.markdown('<div class="publish"> Please leave your FEEDBACK to make Developer Improve the App Consistently!</div>',
+                    unsafe_allow_html=True)
+            handle_feedback_submission(emotion, "emotion")
 
-            if 'total_duration' not in st.session_state:
-                st.session_state.total_duration = duration_options[1]  # Default to 30
-            total_duration = st.selectbox(
-                "Choose the duration (seconds):",
-                options=duration_options,
-                index=duration_options.index(st.session_state.total_duration),
-                key="duration_select"
-            )
-            st.session_state.total_duration = total_duration
-
-            if 'tempo' not in st.session_state:
-                st.session_state.tempo = options['tempos'][len(options['tempos']) // 2]  # Middle tempo
-            tempo = st.selectbox(
-                "Choose the tempo (BPM):",
-                options=options['tempos'],
-                index=options['tempos'].index(st.session_state.tempo),
-                key="tempo_select"
-            )
-            st.session_state.tempo = tempo
-
-            if 'include_drums' not in st.session_state:
-                st.session_state.include_drums = True  # Default to including drums
-            include_drums = st.checkbox(
-                "Include drums?",
-                value=st.session_state.include_drums,
-                key="drum_checkbox"
-            )
-            st.session_state.include_drums = include_drums
-
-            # Generate music only on button click or if parameters changed
-            generate_key = f"{emotion}_{melody_program}_{chord_program}_{total_duration}_{tempo}"
-            if st.button("Generate Music") or ('generate_key' in st.session_state and st.session_state.generate_key != generate_key):
-                with st.spinner("Generating music..."):
-                    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-                    midi_path = generate_midi(emotion, melody_program, chord_program, total_duration, tempo, timestamp, include_drums)
-                    st.session_state.midi_path = midi_path
-                    st.session_state.timestamp = timestamp
-                    st.session_state.generate_key = generate_key
-                    st.success("Music generated successfully! 🎵")
-
-            # Display results if MIDI has been generated
-            if 'midi_path' in st.session_state:
-                midi_path = st.session_state.midi_path
-                timestamp = st.session_state.get('timestamp', os.path.basename(midi_path).split('_')[1].split('.')[0])
-                with open(midi_path, "rb") as file:
-                    st.download_button(
-                        label=f"Download {emotion.capitalize()} Music",
-                        data=file,
-                        file_name=os.path.basename(midi_path),
-                        mime="audio/midi",
-                        key="download-midi"
-                    )
-
-            # Feedback submission form
-            with st.form(key='feedback_form'):
-                feedback_text = st.text_area("Share your thoughts about this music!", height=100)
-                submit_button = st.form_submit_button(label='Submit Feedback')
-                
-                if submit_button and feedback_text:
-                    if 'temp_path' not in st.session_state or not os.path.exists(st.session_state.temp_path):
-                        st.error("Please upload an image first.")
-                    else:
-                        feedback_images_folder = os.path.join(BASE_PATH, "static", "feedback_images")
-                        os.makedirs(feedback_images_folder, exist_ok=True)
-                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                        image_ext = os.path.splitext(st.session_state.temp_path)[1]
-                        feedback_image_path = os.path.join(feedback_images_folder, f"{emotion}_{timestamp}{image_ext}")
-                        shutil.copy(st.session_state.temp_path, feedback_image_path)
-                        # Add feedback with image path (assuming midi_path is defined)
-                        if 'midi_path' in st.session_state:
-                            add_feedback(emotion, timestamp, feedback_text, st.session_state.midi_path, feedback_image_path)
-                            st.success("Thank you for your feedback! Check it out on the Feedback page.")
-                        else:
-                            st.warning("No music generated yet. Feedback saved without music.")
-                            add_feedback(emotion, timestamp, feedback_text, None, feedback_image_path)
-
-            # Button to upload a new image (clears current state)
-            if st.button("Upload a new image"):
-                if 'temp_path' in st.session_state and os.path.exists(st.session_state.temp_path):
-                    os.remove(st.session_state.temp_path)
-                    del st.session_state.temp_path
-                if 'midi_path' in st.session_state:
-                    del st.session_state.midi_path
-                st.rerun()
-
-        else:
-            # Show file uploader if no image is uploaded
-            uploaded_file = st.file_uploader("Upload an image to generate music based on its emotion!",
-                                            type=["jpg", "jpeg", "png"])
-            if uploaded_file is not None:
-                # Remove previous temp_path if it exists
-                if 'temp_path' in st.session_state and os.path.exists(st.session_state.temp_path):
-                    os.remove(st.session_state.temp_path)
-                # Save new uploaded file
-                with st.spinner("Analyzing emotion..."):
-                    try:
-                        temp_path = os.path.join(MUSIC_FOLDER, secure_filename(uploaded_file.name))
-                        with open(temp_path, "wb") as f:
-                            f.write(uploaded_file.getbuffer())
-                        # Detect emotion
-                        result = emotion_system.predict_emotion(temp_path)
-                        emotion = result['emotion']
-                        # Store in session state
-                        st.session_state.emotion = emotion
-                        st.session_state.last_file = uploaded_file.name
-                        st.session_state.temp_path = temp_path
-                        # Reset MIDI path if it exists
-                        if 'midi_path' in st.session_state:
-                            del st.session_state.midi_path
-                    except Exception as e:
-                        st.error(f"Oops! Something went wrong: {str(e)}")
-                        st.write("Please try uploading a different image.")
-                        return
-                # Rerun to display the image and options
-                st.rerun()
-
-        # Add a footer
         st.markdown("---")
         st.markdown('<p class="footer">Built with ❤️ using Streamlit</p>', unsafe_allow_html=True)
 
     elif page == "Feedback":
-        # Feedback page
         st.markdown('<div class="main-title">Community Feedback</div>', unsafe_allow_html=True)
         display_feedback()
-
-        # Add a footer
         st.markdown("---")
         st.markdown('<p class="footer">Built with ❤️ using Streamlit</p>', unsafe_allow_html=True)
-    
-   
-  
-
-    # File uploader
-    # st.markdown('<div class="upload-box">', unsafe_allow_html=True)
-   
-    # st.markdown('</div>', unsafe_allow_html=True)
-
-
 
 if __name__ == "__main__":
     main()
