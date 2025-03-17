@@ -16,6 +16,5 @@ streamlit==1.40.1
 werkzeug
 pretty_midi==0.2.9
 requests
-sqlite3
 psycopg2-binary==2.9.9
 sqlitecloud
