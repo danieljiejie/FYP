@@ -199,69 +199,92 @@ def generate_midi(emotion,melody_instrument_program,chord_instrument_program,tot
 
     return output_path
 
+def get_db_connection():
+    """Establish a connection to the database (local or cloud based on environment)."""
+    if "database" in st.secrets and "url" in st.secrets["database"]:
+        conn = sqlitecloud.connect(st.secrets["database"]["url"])
+    else:  # Local SQLite fallback
+        conn = sqlite3.connect(FEEDBACK_DB)
+        conn.row_factory = sqlite3.Row
+    return conn
+
+def init_database():
+    """Initialize the feedback database and create the table if it doesn't exist."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            emotion TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            feedback TEXT NOT NULL,
+            music_file TEXT,
+            image_file TEXT,
+            date TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
 def add_feedback(emotion, timestamp, user_feedback, midi_path=None, image_path=None):
-    """Add new feedback entry with optional music and image files"""
-    feedback_list = load_feedback()  # Load existing feedback from JSON
+    conn = get_db_connection()
+    cursor = conn.cursor() if isinstance(conn, sqlite3.Connection) else conn
     
-    # Base feedback entry without optional fields
-    feedback_entry = {
-        "emotion": emotion,
-        "timestamp": timestamp,
-        "feedback": user_feedback,
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
+    date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    # Handle music file if provided
+    music_file = None
     if midi_path:
         feedback_music_folder = os.path.join(BASE_PATH, "static", "feedback_music")
         os.makedirs(feedback_music_folder, exist_ok=True)
         feedback_midi_path = os.path.join(feedback_music_folder, f"{emotion}_{timestamp}.mid")
         shutil.copy(midi_path, feedback_midi_path)
-        relative_midi_path = os.path.relpath(feedback_midi_path, BASE_PATH)
-        feedback_entry["music_file"] = relative_midi_path
+        music_file = os.path.relpath(feedback_midi_path, BASE_PATH)  # For now; replace with cloud URL later
     
-   # Handle image file if provided
+    image_file = None
     if image_path:
         feedback_images_folder = os.path.join(BASE_PATH, "static", "feedback_images")
         os.makedirs(feedback_images_folder, exist_ok=True)
         image_ext = os.path.splitext(image_path)[1]
         feedback_image_path = os.path.join(feedback_images_folder, f"{emotion}_{timestamp}{image_ext}")
-        
-        # Check if source and destination are the same file
-        if os.path.abspath(image_path) != os.path.abspath(feedback_image_path):
-            shutil.copy(image_path, feedback_image_path)
+        if image_path.startswith(feedback_images_folder):
+            image_file = os.path.relpath(image_path, BASE_PATH)
         else:
-            st.warning("Image already exists at destination; skipping copy.")
-        
-        relative_image_path = os.path.relpath(feedback_image_path, BASE_PATH)
-        feedback_entry["image_file"] = relative_image_path
+            shutil.copy(image_path, feedback_image_path)
+            image_file = os.path.relpath(feedback_image_path, BASE_PATH)
     
-    # Add the feedback entry to the list and save
-    feedback_list.append(feedback_entry)
-    save_feedback(feedback_list)
-
+    # Insert into database (compatible with SQLite or SQLAlchemy)
+    query = '''
+        INSERT INTO feedback (emotion, timestamp, feedback, music_file, image_file, date)
+        VALUES (?, ?, ?, ?, ?, ?)
+    '''
+   
+    cursor.execute(query, (emotion, timestamp, user_feedback, music_file, image_file, date))
+    conn.commit()
+    conn.close()
+    
 def load_feedback():
-    """Load feedback from JSON file"""
-    feedback_file = os.path.join(BASE_PATH, "feedback.json")
-    if os.path.exists(feedback_file):
-        with open(feedback_file, "r") as f:
-            return json.load(f)
-    return []
-
-def save_feedback(feedback_list):
-    """Save feedback to JSON file"""
-    feedback_file = os.path.join(BASE_PATH, "feedback.json")
-    with open(feedback_file, "w") as f:
-        json.dump(feedback_list, f, indent=4)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM feedback ORDER BY id DESC')
+    rows = cursor.fetchall()
+    
+    # Get column names from cursor.description
+    columns = [desc[0] for desc in cursor.description]
+    
+    # Convert each row to a dictionary
+    feedback_list = [dict(zip(columns, row)) for row in rows]
+    
+    conn.close()
+    return feedback_list
 
 def display_feedback():
     feedback_list = load_feedback()
     if feedback_list:
-        for entry in reversed(feedback_list):  # Show most recent first
+        for entry in feedback_list:
             st.markdown("---")
-            col1, col2 = st.columns([1, 2])  # Two columns: image on left, details on right
+            col1, col2 = st.columns([1, 2])
             with col1:
-                if 'image_file' in entry:
+                if entry['image_file']:
                     image_path = os.path.join(BASE_PATH, entry['image_file'])
                     if os.path.exists(image_path):
                         st.image(image_path, caption="Uploaded Image", use_container_width=True)
@@ -272,7 +295,7 @@ def display_feedback():
             with col2:
                 st.markdown(f"**Emotion:** {entry['emotion'].capitalize()}")
                 st.markdown(f"**Feedback:** {entry['feedback']}")
-                if 'music_file' in entry:
+                if entry['music_file']:
                     music_path = os.path.join(BASE_PATH, entry['music_file'])
                     if os.path.exists(music_path):
                         with open(music_path, "rb") as audio_file:
@@ -418,6 +441,8 @@ def handle_feedback_submission(emotion, tab_key_prefix, image_path=None):
                     add_feedback(emotion, timestamp, feedback_text, None, feedback_image_path)
 
 def main():
+
+    init_database()
     # Load external CSS
     load_css(os.path.join(BASE_PATH, "styles.css"))
 
