@@ -229,8 +229,8 @@ def init_database():
 
 def add_feedback(emotion, timestamp, user_feedback, midi_path=None, image_path=None):
     conn = get_db_connection()
-    cursor = conn.cursor() if isinstance(conn, sqlite3.Connection) else conn
-    
+    #cursor = conn.cursor() if isinstance(conn, sqlite3.Connection) else conn
+    cursor = conn.cursor()
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     music_file = None
