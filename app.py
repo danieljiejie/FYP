@@ -14,6 +14,7 @@ import MusicPostProcess
 import json
 import shutil
 
+import sqlitecloud
 # Dynamic paths
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 MUSIC_FOLDER = os.path.join(BASE_PATH, "static", "music")
@@ -203,9 +204,9 @@ def get_db_connection():
     """Establish a connection to the database (local or cloud based on environment)."""
     if "database" in st.secrets and "url" in st.secrets["database"]:
         conn = sqlitecloud.connect(st.secrets["database"]["url"])
-    else:  # Local SQLite fallback
-        conn = sqlite3.connect(FEEDBACK_DB)
-        conn.row_factory = sqlite3.Row
+    # else:  # Local SQLite fallback
+    #     conn = sqlite3.connect(FEEDBACK_DB)
+    #     conn.row_factory = sqlite3.Row
     return conn
 
 def init_database():
