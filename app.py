@@ -26,7 +26,7 @@ os.makedirs(MODEL_FOLDER, exist_ok=True)
 
 # GitHub URLs for models (replace with your actual URLs)
 FACIAL_MODEL_URL = "https://github.com/danieljiejie/FYP/releases/download/v1.0.1/FacialEmotionModel.h5"
-GENERAL_MODEL_URL = "https://github.com/danieljiejie/FYP/releases/download/v1.0.3/best_swin_emotion_model.pth"
+GENERAL_MODEL_URL = "https://github.com/danieljiejie/FYP/releases/download/v1.0.2/NonFacialEmotionModelV2.pth"
 #JOBLIB_MODEL_URL = "https://github.com/danieljiejie/FYP/releases/download/v2.0.0/Emotion_Detection_System_cpu.joblib"
 
 # Emotion-specific options
