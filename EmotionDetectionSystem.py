@@ -216,59 +216,55 @@ class EmotionDetectionSystem:
         self.emotion_class_general = ['angry', 'awe', 'fear', 'happy', 'sad']
         
     def load_models(self):
-            facial_model_path = os.path.join(self.model_folder, 'best_swin_emotion_model.pth')
-            general_model_path = os.path.join(self.model_folder, 'NonFacialEmotionModelV2.pth')
+        facial_model_path = os.path.join(self.model_folder, 'best_swin_emotion_model.pth')
+        general_model_path = os.path.join(self.model_folder, 'NonFacialEmotionModelV2.pth')
             
-            # Load facial emotion model (Swin Transformer)
-            self.facial_model = create_model('swin_base_patch4_window7_224', pretrained=False, num_classes=4)
-            self.facial_model.to(self.device)
-            checkpoint = torch.load(facial_model_path, map_location=torch.device('cpu'))
-            self.facial_model.load_state_dict(checkpoint)
-            self.facial_model.eval()
-            print(f"Loaded facial model from {facial_model_path}")
+        # Load facial emotion model (Swin Transformer)
+        self.facial_model = create_model('swin_base_patch4_window7_224', pretrained=False, num_classes=4)
+        self.facial_model.to(self.device)
+        checkpoint = torch.load(facial_model_path, map_location=torch.device('cpu'))
+        self.facial_model.load_state_dict(checkpoint)
+        self.facial_model.eval()
+        print(f"Loaded facial model from {facial_model_path}")
         
-            # Load general emotion model
-            self.general_model = EmotionClassifier(num_classes=5)
-            self.general_model.to(self.device)
-            checkpoint = torch.load(general_model_path, map_location=torch.device('cpu'))
-            self.general_model.load_state_dict(checkpoint['model_state_dict'])
-            self.general_model.eval()
-            print(f"Loaded general model from {general_model_path}")
+        # Load general emotion model
+        self.general_model = EmotionClassifier(num_classes=5)
+        self.general_model.to(self.device)
+        checkpoint = torch.load(general_model_path, map_location=torch.device('cpu'))
+        self.general_model.load_state_dict(checkpoint['model_state_dict'])
+        self.general_model.eval()
+        print(f"Loaded general model from {general_model_path}")
         
-    def save_system(self, save_path='Model/Emotion_Detection_System.joblib'):
-        """Save the entire system using joblib"""
+    def save_system(self):
+        save_path = os.path.join(self.model_folder, 'Emotion_Detection_System.joblib')
         system_state = {
-            'facial_model_state': self.facial_model.state_dict(),
-            'general_model_state': self.general_model.state_dict(),
-            'emotion_class_facial': self.emotion_class_facial,
-            'emotion_class_general': self.emotion_class_general,
-            'transform_state': None  # val_transform doesn’t have state_dict
-        }
+        'facial_model_state': self.facial_model.state_dict(),
+        'general_model_state': self.general_model.state_dict(),
+        'emotion_class_facial': self.emotion_class_facial,
+        'emotion_class_general': self.emotion_class_general,
+        'transform_state': None
+            }
         joblib.dump(system_state, save_path)
         print(f"System saved to {save_path}")
         
-    def load_system(self, load_path='Emotion_Detection_System.joblib'):
-        """Load the entire system from joblib"""
+   def load_system(self):
+        load_path = os.path.join(self.model_folder, 'Emotion_Detection_System.joblib')
         system_state = joblib.load(load_path)
-        
-        # Recreate and load facial model
+            
+         # Recreate and load facial model
         self.facial_model = create_model('swin_base_patch4_window7_224', pretrained=False, num_classes=4)
         self.facial_model.to(self.device)
         cpu_state_dict = {k: v.to('cpu') if v.is_cuda else v for k, v in system_state['facial_model_state'].items()}
         self.facial_model.load_state_dict(cpu_state_dict)
         self.facial_model.eval()
-        
+            
         # Recreate and load general model
         self.general_model = EmotionClassifier(num_classes=5)
         self.general_model.to(self.device)
         cpu_state_dict = {k: v.to('cpu') if v.is_cuda else v for k, v in system_state['general_model_state'].items()}
         self.general_model.load_state_dict(cpu_state_dict)
         self.general_model.eval()
-        
-        # Load other attributes
-        self.emotion_class_facial = system_state['emotion_class_facial']
-        self.emotion_class_general = system_state['emotion_class_general']
-        
+            
         print("System loaded successfully")
 
     def detect_face_emotion(self, image_path):
