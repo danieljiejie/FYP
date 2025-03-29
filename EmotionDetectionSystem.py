@@ -247,7 +247,7 @@ class EmotionDetectionSystem:
         joblib.dump(system_state, save_path)
         print(f"System saved to {save_path}")
         
-   def load_system(self):
+    def load_system(self):
         load_path = os.path.join(self.model_folder, 'Emotion_Detection_System.joblib')
         system_state = joblib.load(load_path)
             
