@@ -26,8 +26,8 @@ os.makedirs(MODEL_FOLDER, exist_ok=True)
 
 # GitHub URLs for models (replace with your actual URLs)
 FACIAL_MODEL_URL = "https://github.com/danieljiejie/FYP/releases/download/v1.0.1/FacialEmotionModel.h5"
-GENERAL_MODEL_URL = "https://github.com/danieljiejie/FYP/releases/download/v1.0.2/NonFacialEmotionModelV2.pth"
-JOBLIB_MODEL_URL = "https://github.com/danieljiejie/FYP/releases/download/v2.0.0/Emotion_Detection_System_cpu.joblib"
+GENERAL_MODEL_URL = "https://github.com/danieljiejie/FYP/releases/download/v1.0.3/best_swin_emotion_model.pth"
+#JOBLIB_MODEL_URL = "https://github.com/danieljiejie/FYP/releases/download/v2.0.0/Emotion_Detection_System_cpu.joblib"
 
 # Emotion-specific options
 emotion_options = {
@@ -134,7 +134,7 @@ def download_models(force_download=False):
     model_files = {
         "FacialEmotionModel.h5": FACIAL_MODEL_URL,
         "NonFacialEmotionModelV2.pth": GENERAL_MODEL_URL,
-        "Emotion_Detection_System_cpu.joblib": JOBLIB_MODEL_URL
+        #"Emotion_Detection_System_cpu.joblib": JOBLIB_MODEL_URL
     }
     for filename, url in model_files.items():
         local_path = os.path.join(MODEL_FOLDER, filename)
