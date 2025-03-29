@@ -154,7 +154,7 @@ def download_models(force_download=False):
 def init_emotion_system():
     download_models()
     with st.spinner("Initializing Emotion Detection System..."):
-        emotion_system = EmotionDetectionSystem()
+        emotion_system = EmotionDetectionSystem(MODEL_FOLDER)
         if not os.path.exists(MODEL_PATH):
             st.info("First-time setup: Loading and saving models...")
             emotion_system.load_models()
