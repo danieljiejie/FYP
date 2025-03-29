@@ -202,41 +202,38 @@ from EmotionClassifier import EmotionClassifier
 #         return self.model(x)
 
 class EmotionDetectionSystem:
-    def __init__(self):
-        # Use CPU for simplicity (consistent with your setup)
+    def __init__(self, model_folder):
+        self.model_folder = model_folder
         self.device = torch.device("cpu")
-        
-        # Initialize transformations (same as training)
         self.val_transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
-        
-        # Initialize models
-        self.facial_model = None  # Now a PyTorch model
+        self.facial_model = None
         self.general_model = None
-        self.emotion_class_facial = ['angry', 'fear', 'happy', 'sad']  # Matches your Swin model
+        self.emotion_class_facial = ['angry', 'fear', 'happy', 'sad']
         self.emotion_class_general = ['angry', 'awe', 'fear', 'happy', 'sad']
         
-    def load_models(self, facial_model_path='best_swin_emotion_model.pth',
-                    general_model_path='FYP Final Version/Model/NonFacialEmotionModelV2.pth'):
-        """Load both facial and general emotion models (both PyTorch)"""
-        # Load facial emotion model (Swin Transformer)
-        self.facial_model = create_model('swin_base_patch4_window7_224', pretrained=False, num_classes=4)
-        self.facial_model.to(self.device)
-        checkpoint = torch.load(facial_model_path, map_location=torch.device('cpu'))
-        self.facial_model.load_state_dict(checkpoint)  # Direct state_dict loading
-        self.facial_model.eval()
-        print(f"Loaded facial model from {facial_model_path}")
-
-        # Load general emotion model (unchanged)
-        self.general_model = EmotionClassifier(num_classes=5)
-        self.general_model.to(self.device)
-        checkpoint = torch.load(general_model_path, map_location=torch.device('cpu'))
-        self.general_model.load_state_dict(checkpoint['model_state_dict'])
-        self.general_model.eval()
-        print(f"Loaded general model from {general_model_path}")
+    def load_models(self):
+            facial_model_path = os.path.join(self.model_folder, 'best_swin_emotion_model.pth')
+            general_model_path = os.path.join(self.model_folder, 'NonFacialEmotionModelV2.pth')
+            
+            # Load facial emotion model (Swin Transformer)
+            self.facial_model = create_model('swin_base_patch4_window7_224', pretrained=False, num_classes=4)
+            self.facial_model.to(self.device)
+            checkpoint = torch.load(facial_model_path, map_location=torch.device('cpu'))
+            self.facial_model.load_state_dict(checkpoint)
+            self.facial_model.eval()
+            print(f"Loaded facial model from {facial_model_path}")
+        
+            # Load general emotion model
+            self.general_model = EmotionClassifier(num_classes=5)
+            self.general_model.to(self.device)
+            checkpoint = torch.load(general_model_path, map_location=torch.device('cpu'))
+            self.general_model.load_state_dict(checkpoint['model_state_dict'])
+            self.general_model.eval()
+            print(f"Loaded general model from {general_model_path}")
         
     def save_system(self, save_path='Model/Emotion_Detection_System.joblib'):
         """Save the entire system using joblib"""
