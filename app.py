@@ -133,7 +133,7 @@ def load_css(file_path):
 def download_models(force_download=False):
     model_files = {
         "FacialEmotionModel.h5": FACIAL_MODEL_URL,
-        "NonFacialEmotionModelV2.pth": GENERAL_MODEL_URL,
+        "best_swin_emotion_model.pth": GENERAL_MODEL_URL,
         #"Emotion_Detection_System_cpu.joblib": JOBLIB_MODEL_URL
     }
     for filename, url in model_files.items():
