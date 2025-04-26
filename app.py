@@ -204,7 +204,8 @@ def get_db_connection():
     """Establish a connection to the database (local or cloud based on environment)."""
     # if "database" in st.secrets and "url" in st.secrets["database"]:
     try:
-        url = st.secrets["database"]["url"]
+        #url = st.secrets["database"]["url"]
+        url = "sqlitecloud://cozotbj2nz.g3.sqlite.cloud:8860/feedback.sqlite?apikey=Ia32NTkbROXT4615UbVEeSah9yQKs007mjuzrNZ1TrM"
         conn = sqlitecloud.connect(url)
     except KeyError:
         st.error("Database URL not found in secrets. Please configure it in secrets.toml or Streamlit Cloud settings.")
