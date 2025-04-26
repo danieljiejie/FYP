@@ -203,7 +203,7 @@ def generate_midi(emotion,melody_instrument_program,chord_instrument_program,tot
 def get_db_connection():
     """Establish a connection to the database (local or cloud based on environment)."""
     # if "database" in st.secrets and "url" in st.secrets["database"]:
-   try:
+    try:
         url = st.secrets["database"]["url"]
         conn = sqlitecloud.connect(url)
     except KeyError:
