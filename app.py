@@ -203,7 +203,12 @@ def generate_midi(emotion,melody_instrument_program,chord_instrument_program,tot
 def get_db_connection():
     """Establish a connection to the database (local or cloud based on environment)."""
     # if "database" in st.secrets and "url" in st.secrets["database"]:
-    conn = sqlitecloud.connect(st.secrets["database"]["url"])
+   try:
+        url = st.secrets["database"]["url"]
+        conn = sqlitecloud.connect(url)
+    except KeyError:
+        st.error("Database URL not found in secrets. Please configure it in secrets.toml or Streamlit Cloud settings.")
+        conn = None  # Prevents the app from crashing; handle this case downstream
     # else:  # Local SQLite fallback
     #     conn = sqlite3.connect(FEEDBACK_DB)
     #     conn.row_factory = sqlite3.Row
@@ -212,6 +217,9 @@ def get_db_connection():
 def init_database():
     """Initialize the feedback database and create the table if it doesn't exist."""
     conn = get_db_connection()
+    if conn is None:
+        st.error("Cannot initialize database due to missing connection.")
+        return
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS feedback (
